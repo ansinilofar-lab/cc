@@ -1,0 +1,255 @@
+# EXPERIMENT 3 – INSTALL GOOGLE APP ENGINE AND CREATE HELLO WORLD AND OTHER SIMPLE WEB APPLICATIONS
+
+Anna University – CCS335 Cloud Computing Lab
+
+Aim:
+
+To install Google App Engine (Google Cloud CLI), create a Hello World application and other simple web applications using Python, run them locally and deploy them to Google App Engine.
+
+## Requirements
+
+1. Google account and Google Cloud project.
+2. Python 3.9 or later (Python 3.12 used in the manual).
+3. Google Cloud CLI.
+4. Text editor (VS Code / Notepad).
+
+## Procedure
+
+### Part A – Install Google Cloud CLI
+
+Step 1: Download Google Cloud CLI
+
+1. Open: [Google Cloud CLI download](https://cloud.google.com/sdk/docs/install?utm_source=chatgpt.com).
+2. Download `GoogleCloudSDKInstaller.exe`.
+3. Run the installer.
+4. Accept the default options.
+5. Select Run gcloud init at the end.
+
+Step 2: Initialize Google Cloud CLI
+
+Open Google Cloud SDK Shell and execute:
+
+```
+gcloud init
+```
+
+1. Sign in using your Google account.
+2. Select an existing project or create a new project.
+3. Complete initialization.
+
+Step 3: Install App Engine component
+
+```
+gcloud components install app-engine-python
+```
+
+Verify installation:
+
+```
+gcloud --version
+```
+
+### Part B – Create Hello World application
+
+Step 1: Create a folder
+
+Create a folder named `hello-gae`.
+
+Example:
+
+```
+C:\Users\YourName\Desktop\hello-gae
+```
+
+Inside this folder, create three files:
+
+```
+hello-gae
+   |
+   |--- main.py
+   |--- requirements.txt
+   |--- app.yaml
+```
+
+Step 2: Create main.py
+
+Open Notepad or VS Code and save the following code as `main.py`.
+
+```
+from datetime import datetimefrom flask import Flaskfrom markupsafe import escapeapp = Flask(__name__)@app.route("/")def hello():    return "Hello, World! This is my first Google App Engine app."@app.route("/hello/<name>")def greet(name):    return "<h1>Hello, " + str(escape(name)) + "!</h1>"@app.route("/time")def show_time():    return "Server time: " + datetime.now().strftime("%d-%m-%Y %H:%M:%S")@app.route("/add/<int:a>/<int:b>")def add(a, b):    return str(a) + " + " + str(b) + " = " + str(a + b)if __name__ == "__main__":    app.run(host="127.0.0.1", port=8080, debug=True)
+```
+
+Step 3: Create requirements.txt
+
+```
+Flask>=3.0
+```
+
+Step 4: Create app.yaml
+
+```
+runtime: python312
+```
+
+This file specifies the Python runtime required by Google App Engine.
+
+### Part C – Run the application locally
+
+Step 1: Open Command Prompt
+
+Navigate to the `hello-gae` folder.
+
+Example:
+
+```
+cd Desktop\hello-gae
+```
+
+Step 2: Create a virtual environment
+
+```
+python -m venv venv
+```
+
+Step 3: Activate virtual environment
+
+```
+venv\Scripts\activate
+```
+
+Step 4: Install required packages
+
+```
+pip install -r requirements.txt
+```
+
+Step 5: Run the application
+
+```
+python main.py
+```
+
+Expected terminal output:
+
+```
+Running on http://127.0.0.1:8080
+```
+
+Step 6: Open browser and test the applications
+
+Program 1 – Hello World
+
+URL
+
+`http://localhost:8080/`
+
+Expected output
+
+Hello, World! This is my first Google App Engine app.
+
+Program 2 – Greeting
+
+URL
+
+`http://localhost:8080/hello/Student`
+
+Expected output
+
+## Hello, Student!
+
+Program 3 – Display server time
+
+URL
+
+`http://localhost:8080/time`
+
+Expected output
+
+`Server time: 11-11-2026 18:00:00`
+
+The displayed date and time will depend on when the application runs.
+
+Program 4 – Addition
+
+URL
+
+`http://localhost:8080/add/10/20`
+
+Expected output
+
+`10 + 20 = 30`
+
+### Part D – Deploy application to Google App Engine
+
+Step 1: Create App Engine application
+
+Choose a region near you, for example `asia-south1`.
+
+```
+gcloud app create --region=asia-south1
+```
+
+Step 2: Deploy application
+
+Make sure you are inside the `hello-gae` folder.
+
+```
+gcloud app deploy
+```
+
+When prompted:
+
+```
+Do you want to continue (Y/n)?
+```
+
+Enter:
+
+```
+Y
+```
+
+Wait for deployment to complete.
+
+Step 3: Open deployed application
+
+```
+gcloud app browse
+```
+
+The application opens in the browser using a URL similar to:
+
+```
+https://PROJECT_ID.REGION_ID.r.appspot.com
+```
+
+[Google Cloud Fundamentals: Getting Started with App Engine | Google Skills](https://images.openai.com/static-rsc-4/J4G-76br3sX0veSbD4xAV0aEKgHsnM8HMyNvpjNuKPK0azcv06N2gm1CnthYaGmt0KbfekeMZCOnc2m__5c4bhVfGbYOkEHCy_8FUQ-5ttrGIj7WNsXgQh5qpIOdsuLgBYhN-rRlTXSHymX5407f1gXJTIZGyjkakSCUN7Z3FGo?purpose=inline)
+
+## Applications
+
+1. Google App Engine is a Platform-as-a-Service (PaaS).
+2. It is used for developing and hosting web applications.
+3. It automatically handles servers, scaling and load balancing.
+4. It is used for web backends, REST APIs and mobile application services.
+
+## Result
+
+Thus, Google App Engine was installed, and a Hello World application and other simple web applications were created, run locally and deployed successfully.
+
+## Important lab exam commands – Quick revision
+
+| Purpose                    | Command                                       |
+| -------------------------- | --------------------------------------------- |
+| Initialize CLI             | `gcloud init`                                 |
+| Install App Engine         | `gcloud components install app-engine-python` |
+| Check version              | `gcloud --version`                            |
+| Create virtual environment | `python -m venv venv`                         |
+| Activate environment       | `venv\Scripts\activate`                       |
+| Install Flask              | `pip install -r requirements.txt`             |
+| Run locally                | `python main.py`                              |
+| Create App Engine app      | `gcloud app create --region=asia-south1`      |
+| Deploy                     | `gcloud app deploy`                           |
+| Open deployed app          | `gcloud app browse`                           |
+
+
+

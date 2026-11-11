@@ -1,0 +1,827 @@
+# Experiment 7 – Install Hadoop Single-Node Cluster and Run WordCount
+
+I'll give you the steps for your Ubuntu inside Oracle VirtualBox, following the CCS335 Cloud Computing Lab manual.
+
+Aim: To install a Hadoop single-node cluster and execute a simple application like WordCount.
+
+Important: Your manual specifies Hadoop 2.7.3 and Java 8. You previously downloaded Hadoop 3.3.6, so don't mix the two versions. The commands below use the manual's Hadoop 2.7.3 setup.
+
+## 1. Open Ubuntu Terminal
+
+First check your Java version:
+
+```
+java -version
+```
+
+The manual requires Java 8. If Java 8 is not installed, install it before continuing:
+
+```
+sudo apt update
+sudo apt install openjdk-8-jdk -y
+```
+
+Check again:
+
+```
+java -version
+```
+
+## 2. Download and extract Hadoop
+
+Go to your home directory:
+
+```
+cd ~
+```
+
+Download Hadoop 2.7.3:
+
+```
+wget https://archive.apache.org/dist/hadoop/core/hadoop-2.7.3/hadoop-2.7.3.tar.gz
+```
+
+Extract it:
+
+```
+tar -xvzf hadoop-2.7.3.tar.gz
+```
+
+Check:
+
+```
+ls
+```
+
+You should see `hadoop-2.7.3`.
+
+## 3. Set environment variables
+
+Open the `.bashrc` file:
+
+```
+gedit ~/.bashrc
+```
+
+Go to the bottom and add:
+
+```
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+export HADOOP_HOME=$HOME/hadoop-2.7.3
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+```
+
+Save and close.
+
+Apply the changes:
+
+```
+source ~/.bashrc
+```
+
+Check:
+
+```
+java -version
+hadoop version
+```
+
+If both commands show their versions, continue.
+
+## 4. Configure Hadoop files
+
+Go to the configuration folder:
+
+```
+cd $HADOOP_HOME/etc/hadoop
+```
+
+### A. Configure `core-site.xml`
+
+```
+nano core-site.xml
+```
+
+Replace its contents with:
+
+```
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>fs.default.name</name>
+        <value>hdfs://localhost:9000</value>
+    </property>
+</configuration>
+```
+
+Save: `Ctrl + O`, Enter, `Ctrl + X`.
+
+### B. Configure `hdfs-site.xml`
+
+```
+nano hdfs-site.xml
+```
+
+Replace its contents with:
+
+```
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+    <property>
+        <name>dfs.permissions</name>
+        <value>false</value>
+    </property>
+</configuration>
+```
+
+Save and close.
+
+### C. Configure `mapred-site.xml`
+
+First create the file from its template:
+
+```
+cp mapred-site.xml.template mapred-site.xml
+```
+
+Open it:
+
+```
+nano mapred-site.xml
+```
+
+Replace its contents with:
+
+```
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+</configuration>
+```
+
+Save and close.
+
+### D. Configure `yarn-site.xml`
+
+```
+nano yarn-site.xml
+```
+
+Replace its contents with:
+
+```
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+</configuration>
+```
+
+Save and close.
+
+### E. Configure `hadoop-env.sh`
+
+```
+nano hadoop-env.sh
+```
+
+Find the `JAVA_HOME` line and set it to:
+
+```
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+```
+
+Save and close.
+
+## 5. Configure SSH
+
+Hadoop uses SSH to start its services.
+
+Install SSH:
+
+```
+sudo apt install openssh-server -y
+```
+
+Start SSH:
+
+```
+sudo service ssh start
+```
+
+Generate SSH key:
+
+```
+ssh-keygen -t rsa -P "" -f ~/.ssh/id_rsa
+```
+
+Press Enter if asked to overwrite an existing key only if you are sure you don't need that key.
+
+Add the public key:
+
+```
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+```
+
+Set permission:
+
+```
+chmod 600 ~/.ssh/authorized_keys
+```
+
+Test:
+
+```
+ssh localhost
+```
+
+If asked to continue connecting, type:
+
+```
+yes
+```
+
+It should connect without asking for your account password. Then type:
+
+```
+exit
+```
+
+## 6. Format the NameNode
+
+Go to the home directory:
+
+```
+cd ~
+```
+
+Format HDFS:
+
+```
+hdfs namenode -format
+```
+
+
+
+Important
+
+&#x20;Format only when initializing the cluster for the first time. Do not format an already-running cluster because it can erase HDFS metadata.
+
+
+
+## 7. Start Hadoop services
+
+Start HDFS:
+
+```
+start-dfs.sh
+```
+
+Start YARN:
+
+```
+start-yarn.sh
+```
+
+Start JobHistory:
+
+```
+mr-jobhistory-daemon.sh start historyserver
+```
+
+Check all services:
+
+```
+jps
+```
+
+Expected services
+
+You should see these Java processes:
+
+```
+NameNode
+DataNode
+SecondaryNameNode
+ResourceManager
+NodeManager
+JobHistoryServer
+Jps
+```
+
+Open Firefox in Ubuntu and visit:
+
+```
+http://localhost:50070/dfshealth.html
+```
+
+You should see the Hadoop NameNode web interface.
+
+## 8. Run WordCount application
+
+Create a text file:
+
+```
+cd ~
+```
+
+```
+echo "hello hadoop hello cloud computing" > word.txt
+```
+
+Create an input directory in HDFS:
+
+```
+hdfs dfs -mkdir -p /input
+```
+
+Upload the text file:
+
+```
+hdfs dfs -put word.txt /input
+```
+
+Check the uploaded file:
+
+```
+hdfs dfs -ls /input
+```
+
+Run WordCount:
+
+```
+hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount /input /output
+```
+
+Display the result:
+
+```
+hdfs dfs -cat /output/part-r-00000
+```
+
+Expected output
+
+```
+cloud       1
+computing   1
+hadoop      1
+hello       2
+```
+
+The word counts may be displayed in a different order.
+
+## 9. Stop Hadoop services
+
+After successful execution:
+
+```
+mr-jobhistory-daemon.sh stop historyserver
+stop-yarn.sh
+stop-dfs.sh
+```
+
+## 10. Result
+
+Thus, the Hadoop single-node cluster was installed successfully and the WordCount application was executed successfully.
+
+## Quick revision – Commands only
+
+| Task              | Command                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| Check Java        | `java -version`                                                                                               |
+| Check Hadoop      | `hadoop version`                                                                                              |
+| Format NameNode   | `hdfs namenode -format`                                                                                       |
+| Start HDFS        | `start-dfs.sh`                                                                                                |
+| Start YARN        | `start-yarn.sh`                                                                                               |
+| Check services    | `jps`                                                                                                         |
+| Create HDFS input | `hdfs dfs -mkdir -p /input`                                                                                   |
+| Upload file       | `hdfs dfs -put word.txt /input`                                                                               |
+| Run WordCount     | `hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount /input /output` |
+| Display result    | `hdfs dfs -cat /output/part-r-00000`                                                                          |
+| Stop HDFS         | `stop-dfs.sh`                                                                                                 |
+| Stop YARN         | `stop-yarn.sh`                                                                                                |
+
+## Important: Before you start
+
+You previously had Hadoop 3.3.6 installed and faced errors involving `JAVA_HOME`, SSH and ResourceManager. This procedure is for Hadoop 2.7.3 with Java 8, as specified by the manual. Don't run it on top of your existing Hadoop 3.3.6 setup without first checking which version is active.
+
+Let's avoid repeating those errors. Run these three commands in your Ubuntu VM and send me their output:
+
+```
+java -version
+hadoop version
+echo $HADOOP_HOME
+```
+
+I'll use that output to adjust the commands to your actual VM before you execute the experiment.
+
+part -2
+
+
+# Experiment 7 – Install Hadoop Single Node Cluster and Run WordCount MapReduce Application
+
+Anna University Cloud Computing Lab
+
+This procedure follows your Cloud Computing Lab manual, which specifies Hadoop 2.7.3 and Java 8. We will use Ubuntu inside Oracle VirtualBox.&#x20;
+
+ccs335-cloud-lab-manual-complete.pdf
+
+
+
+## 1. Aim
+
+To install Hadoop single-node cluster and execute a simple MapReduce application such as WordCount.
+
+## 2. Software Requirements
+
+- Oracle VirtualBox
+- Ubuntu operating system
+- Java JDK 8
+- Hadoop 2.7.3
+- Minimum 4 GB RAM recommended
+
+## 3. Procedure
+
+### Step 1 – Install Java 8
+
+Open Ubuntu Terminal (`Ctrl + Alt + T`).
+
+```
+sudo apt update
+sudo apt install openjdk-8-jdk -y
+```
+
+Check Java:
+
+```
+java -version
+```
+
+Expected: Java version 1.8.
+
+### Step 2 – Download Hadoop
+
+```
+cd ~
+wget https://archive.apache.org/dist/hadoop/core/hadoop-2.7.3/hadoop-2.7.3.tar.gz
+```
+
+Extract Hadoop:
+
+```
+tar -xvzf hadoop-2.7.3.tar.gz
+```
+
+### Step 3 – Set Environment Variables
+
+Open the bash configuration file:
+
+```
+nano ~/.bashrc
+```
+
+Add these lines at the bottom:
+
+```
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+export HADOOP_HOME=$HOME/hadoop-2.7.3
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+```
+
+Save using `Ctrl + O`, Enter, then `Ctrl + X`.
+
+Apply the changes:
+
+```
+source ~/.bashrc
+```
+
+Check Hadoop:
+
+```
+java -version
+hadoop version
+```
+
+### Step 4 – Configure Hadoop
+
+Open the Hadoop configuration directory:
+
+```
+cd ~/hadoop-2.7.3/etc/hadoop
+```
+
+1\. Configure core-site.xml
+
+```
+nano core-site.xml
+```
+
+Paste:
+
+```
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>fs.default.name</name>
+        <value>hdfs://localhost:9000</value>
+    </property>
+</configuration>
+```
+
+Save and exit.
+
+2\. Configure hdfs-site.xml
+
+```
+nano hdfs-site.xml
+```
+
+Paste:
+
+```
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+    <property>
+        <name>dfs.permissions</name>
+        <value>false</value>
+    </property>
+</configuration>
+```
+
+Save and exit.
+
+3\. Configure mapred-site.xml
+
+```
+cp mapred-site.xml.template mapred-site.xml
+nano mapred-site.xml
+```
+
+Paste:
+
+```
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+</configuration>
+```
+
+Save and exit.
+
+4\. Configure yarn-site.xml
+
+```
+nano yarn-site.xml
+```
+
+Paste:
+
+```
+<?xml version="1.0"?>
+<configuration>
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+</configuration>
+```
+
+Save and exit.
+
+### Step 5 – Configure Java Path
+
+Open:
+
+```
+nano hadoop-env.sh
+```
+
+Find the `JAVA_HOME` line and set:
+
+```
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+```
+
+Save and exit.
+
+### Step 6 – Configure SSH
+
+Install SSH:
+
+```
+sudo apt install openssh-server -y
+sudo service ssh start
+```
+
+Generate SSH key if one does not already exist:
+
+```
+ssh-keygen -t rsa -P "" -f ~/.ssh/id_rsa
+```
+
+Add public key:
+
+```
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+Test SSH:
+
+```
+ssh localhost
+```
+
+Type `yes` if asked to confirm the connection.
+
+Then exit:
+
+```
+exit
+```
+
+### Step 7 – Format NameNode
+
+Go to Hadoop directory:
+
+```
+cd ~/hadoop-2.7.3
+```
+
+Format the NameNode:
+
+```
+hdfs namenode -format
+```
+
+Important: Run this command only for the first-time setup. Do not format an existing HDFS cluster containing data.
+
+### Step 8 – Start Hadoop Services
+
+Start HDFS:
+
+```
+start-dfs.sh
+```
+
+Start YARN:
+
+```
+start-yarn.sh
+```
+
+Start Job History Server:
+
+```
+mr-jobhistory-daemon.sh start historyserver
+```
+
+Check all services:
+
+```
+jps
+```
+
+Expected services:
+
+```
+NameNode
+DataNode
+SecondaryNameNode
+ResourceManager
+NodeManager
+JobHistoryServer
+Jps
+```
+
+### Step 9 – Run WordCount MapReduce Application
+
+Create an input text file:
+
+```
+echo "hello hadoop hello cloud computing" > word.txt
+```
+
+Create an input directory in HDFS:
+
+```
+hdfs dfs -mkdir -p /input
+```
+
+Upload the text file:
+
+```
+hdfs dfs -put word.txt /input
+```
+
+Check the input file:
+
+```
+hdfs dfs -ls /input
+```
+
+Execute WordCount:
+
+```
+hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount /input /output
+```
+
+Display the output:
+
+```
+hdfs dfs -cat /output/part-r-00000
+```
+
+## 4. Expected Output
+
+WordCount MapReduce Output
+
+```
+cloud       1
+computing   1
+hadoop      1
+hello       2
+```
+
+WordCount completed
+
+## 5. Stop Hadoop Services
+
+```
+mr-jobhistory-daemon.sh stop historyserver
+stop-yarn.sh
+stop-dfs.sh
+```
+
+## 6. Result
+
+Thus, the Hadoop single-node cluster was installed successfully, and the WordCount MapReduce application was executed to count the occurrences of words in the input file.
+
+## Important viva questions
+
+| Question           | Answer                                                        |
+| ------------------ | ------------------------------------------------------------- |
+| What is Hadoop?    | Open-source framework for distributed storage and processing. |
+| What is HDFS?      | Hadoop Distributed File System.                               |
+| What is NameNode?  | Manages HDFS metadata.                                        |
+| What is DataNode?  | Stores actual data blocks.                                    |
+| What is MapReduce? | Programming model for processing large datasets.              |
+| What is Mapper?    | Processes input and produces intermediate key-value pairs.    |
+| What is Reducer?   | Combines values for each key.                                 |
+| What is YARN?      | Manages cluster resources and applications.                   |
+| What is WordCount? | Counts occurrences of each word in a file.                    |
+| What is JPS?       | Displays running Java processes.                              |
+
+## Exam-day command revision
+
+Most important commands
+
+```
+java -version
+hadoop version
+
+cd ~/hadoop-2.7.3/etc/hadoop
+
+ssh localhost
+
+cd ~/hadoop-2.7.3
+hdfs namenode -format
+
+start-dfs.sh
+start-yarn.sh
+mr-jobhistory-daemon.sh start historyserver
+
+jps
+
+echo "hello hadoop hello cloud computing" > word.txt
+hdfs dfs -mkdir -p /input
+hdfs dfs -put word.txt /input
+
+hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount /input /output
+
+hdfs dfs -cat /output/part-r-00000
+
+stop-yarn.sh
+stop-dfs.sh
+```
+
+&#x20;Copy all commands
+
+One important warning for your practice: You previously used Hadoop 3.3.6 in another environment. This procedure is specifically for Hadoop 2.7.3 with Java 8. Do not mix the configuration files or JAR files of the two versions. Also, if your Ubuntu VM already has Hadoop 3.3.6 installed, check it before installing this version.
